@@ -59,7 +59,7 @@ async def search_authors(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     for author in authors:
         print(author)
         await update.message.reply_text(author)
-    keyboard = list(map(lambda author: [InlineKeyboardButton(author['name'], callback_data=f"id: {author['scholar_id']}"], authors))
+    keyboard = list(map(lambda author: [InlineKeyboardButton(author['name'], callback_data=f"id: {author['scholar_id']}")], authors))
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
