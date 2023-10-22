@@ -26,18 +26,16 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-# def search_author_on_google_scholar(query):
-#     try:
-#         search_results = scholarly.search_author(query)
-#         first_author_result = next(search_results, None)
-#         if first_author_result:
-#             author = scholarly.fill(first_author_result)
-#             return "Author Information:\n" + scholarly.pprint(author)
-#         else:
-#             return "No author found for the given query."
-#     except Exception as e:
-#         print(e)
-#         print("An error occurred while searching for the author on Google Scholar.")
+def search_author_by_id(id):
+    try:
+        search_results = scholarly.search_author_id(id)
+        if search_results:
+            return "Author Information:\n" + scholarly.pprint(search_results)
+        else:
+            return "No author found for the given id."
+    except Exception as e:
+        print(e)
+        print("An error occurred while searching for the author on Google Scholar.")
 
 async def search_authors(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = context.args
@@ -53,12 +51,15 @@ async def search_authors(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     authors = []
     while(cnt<10):
         cnt += 1
-        authors.append(next(author_info))
+        try: 
+            authors.append(next(author_info))
+        except:
+            print("error")
     print(authors)
     for author in authors:
         print(author)
         await update.message.reply_text(author)
-    keyboard = list(map(lambda author: [InlineKeyboardButton(author['name'], callback_data=author['scholar_id'])], authors))
+    keyboard = list(map(lambda author: [InlineKeyboardButton(author['name'], callback_data=f"id: {author['scholar_id']}"], authors))
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
@@ -82,12 +83,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
-
+    cmd = query.split(":")[0]
+    if cmd:
+        if cmd == "id":
+            author_id = query.split(":")[1]
+            author = search_author_by_id(author_id)
+            await query.answer()
+            await query.edit_message_text(text=f"Information of the author you selected: {author}")
+    else:
+        text=f"Selected option: {query.data}"
+        await query.answer()
+        await query.edit_message_text(text=f"Selected option: {query.data}")
     # CallbackQueries need to be answered, even if no notification to the user is needed
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
-    text=f"Selected option: {query.data}"
-    await query.answer()
-    await query.edit_message_text(text=f"Selected option: {query.data}")
+    
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -98,7 +107,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 def main() -> None:
     """Run the bot."""
     # Create the Application and pass it your bot's token.
-    application.bot.set_my_commands(commands=[("start", "Start the bot"), ("help", "Show help")])
     application = Application.builder().token(config('BOT_TOKEN')).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button))
