@@ -80,6 +80,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
 
+def create_keyboard_buttons(data):
+    keyboards = []
+    fields = ['name', 'affiliation', 'interests', 'citedby']
+    for field in fields:
+        if field in data:
+            keyboards.append([InlineKeyboardButton(f"{field}: {data[field]}", callback_data=f"{field}")])
+    return InlineKeyboardMarkup(keyboards)
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
@@ -89,15 +96,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if cmd == "id":
             author_id = query.data.split(":")[1]
             author = await search_author_by_id(author_id)
-            keyboards = []
-            for key in author:
-                keyboards.append([InlineKeyboardButton(f"key: {author[key]}", callback_data=f"{key}")])
-            reply_markup = InlineKeyboardMarkup(keyboards)
+            reply_markup = create_keyboard_buttons(author)
             await query.message.reply_text(f"Author: {author['name']}", reply_markup=reply_markup)
             await query.answer()
-            await query.edit_message_text(json.dumps(author, indent = 4)  )
+            await query.edit_message_text(json.dumps(author, indent=4))
     else:
-        text=f"Selected option: {query.data}"
+        text = f"Selected option: {query.data}"
         await query.answer()
         await query.edit_message_text(text=f"Selected option: {query.data}")
     # CallbackQueries need to be answered, even if no notification to the user is needed
