@@ -93,7 +93,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             for key in author:
                 keyboards.append([InlineKeyboardButton(f"key: {author[key]}", callback_data=f"{key}")])
             reply_markup = InlineKeyboardMarkup(keyboards)
-            await update.message.reply_text("Please choose:", reply_markup=reply_markup)
+            await query.message.reply_text(reply_markup=reply_markup)
             await query.answer()
             await query.edit_message_text(json.dumps(author, indent = 4)  )
     else:
