@@ -13,7 +13,7 @@ pg.FreeProxies()
 scholarly.use_proxy(pg)
 import logging
 from decouple import config
-
+import json
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
@@ -26,11 +26,12 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-def search_author_by_id(id):
+async def search_author_by_id(id):
+    print("author id: ", id)
     try:
         search_results = scholarly.search_author_id(id)
         if search_results:
-            return "Author Information:\n" + scholarly.pprint(search_results)
+            return search_results
         else:
             return "No author found for the given id."
     except Exception as e:
@@ -59,7 +60,7 @@ async def search_authors(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     for author in authors:
         print(author)
         await update.message.reply_text(author)
-    keyboard = list(map(lambda author: [InlineKeyboardButton(author['name'], callback_data=f"id: {author['scholar_id']}")], authors))
+    keyboard = list(map(lambda author: [InlineKeyboardButton(author['name'], callback_data=f"id:{author['scholar_id']}")], authors))
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
@@ -83,13 +84,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
-    cmd = query.split(":")[0]
+    cmd = query.data.split(":")[0]
     if cmd:
         if cmd == "id":
-            author_id = query.split(":")[1]
-            author = search_author_by_id(author_id)
+            author_id = query.data.split(":")[1]
+            author = await search_author_by_id(author_id)
             await query.answer()
-            await query.edit_message_text(text=f"Information of the author you selected: {author}")
+            await query.edit_message_text(json.dumps(author, indent = 4)  )
     else:
         text=f"Selected option: {query.data}"
         await query.answer()
